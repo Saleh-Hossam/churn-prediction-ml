@@ -102,8 +102,10 @@ Python · Pandas · NumPy · Scikit-learn · XGBoost · Matplotlib · Seaborn ·
 
 ## Files
 
-├── Customer_Churn.ipynb                     # Full notebook — cleaning, EDA, modeling, evaluation
+├── Customer_Churn.ipynb    # Full notebook — cleaning, EDA, modeling, evaluation
+
 ├── WA_Fn-UseC_-Telco-Customer-Churn.csv     # Raw dataset
+
 └── README.md
 
 ---
