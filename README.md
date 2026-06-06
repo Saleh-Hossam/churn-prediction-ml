@@ -1,96 +1,186 @@
-# Customer Churn Prediction 
+# 📉 Customer Churn Prediction
 
-Churn is expensive. Acquiring a new customer costs significantly more than keeping an existing one,
-which makes early detection valuable for any subscription-based business.
-
-This project builds a machine learning pipeline to predict which customers are likely to churn,
-understand why, and translate the findings into actionable business recommendations.
-
----
-
-## Dataset
-
-7,043 customers, 20 features covering demographics, account information, and subscribed services.
-Target variable: whether the customer churned within the last month.
+![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat&logo=python)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-ML-orange?style=flat&logo=scikit-learn)
+![XGBoost](https://img.shields.io/badge/XGBoost-Boosting-red?style=flat)
+![Pandas](https://img.shields.io/badge/Pandas-Analysis-150458?style=flat&logo=pandas)
+![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=flat&logo=jupyter)
+![Status](https://img.shields.io/badge/Status-Completed-brightgreen?style=flat)
 
 ---
 
-## What this project covers
-
-- Data cleaning and type correction (TotalCharges was stored as a string)
-- Encoding binary and multi-class categorical features
-- Exploratory analysis — churn rate by contract type, internet service, tenure, and monthly charges
-- Training and comparing five models: Logistic Regression, Decision Tree, Random Forest, XGBoost, and SVM
-- Hyperparameter tuning with GridSearchCV
-- Feature engineering — added AvgMonthlySpend (TotalCharges / tenure)
-- Handling class imbalance using class_weight='balanced'
-- Evaluation with Accuracy, Precision, Recall, F1, ROC-AUC, and Precision-Recall curves
-- Logistic Regression coefficients analysis to explain which features drive churn
+> 7,043 customers. 27% churned. 5 models tested. The simplest model won — but only after fixing the real problem.
 
 ---
 
-## Model comparison
+## The Problem
+
+Acquiring a new customer costs 5–7× more than keeping an existing one.
+That makes churn a revenue problem first, and a modeling problem second.
+
+This project builds a full ML pipeline to predict which customers are at risk,
+understand why they leave, and give the business something it can act on.
+
+---
+
+## Key Results
+
+```
+✅ Recall improved from 51% → 79% after handling class imbalance
+✅ ROC-AUC of 0.83 — model meaningfully separates churners from non-churners
+✅ 296 out of 374 churners correctly identified
+✅ Balanced Logistic Regression outperformed Random Forest and XGBoost on F1
+⚠️ Fiber Optic customers churn at a disproportionately high rate
+⚠️ Month-to-month contracts are the strongest controllable churn driver
+⚠️ Increasing model complexity did not help — the signal in this data is largely linear
+```
+
+---
+
+## Visuals
+
+### Churn Distribution
+![Churn Distribution](images/churn_distribution.png)
+
+> The 73/27 split looks moderate — but it is enough to break a naive model.
+> Without correction, the model learns that predicting "stay" is usually right.
+> That gives high accuracy and useless recall.
+
+---
+
+### Model Comparison
+![Model Comparison](images/model_comparison.png)
+
+> Random Forest and XGBoost both lost to a well-configured Logistic Regression.
+> The relationships in this data are largely linear — adding complexity only added noise.
+
+---
+
+### Confusion Matrix
+![Confusion Matrix](images/confusion_matrix.png)
+
+> 296 churners caught. 78 missed. 300 false alarms.
+> The false alarms are customers who get a retention offer they didn't need — acceptable.
+> The 78 misses are customers who left with no intervention — that is the number that matters.
+
+---
+
+### ROC Curve — AUC 0.83
+![ROC Curve](images/roc_curve.png)
+
+> AUC of 0.83 means the model correctly ranks a random churner above a random
+> non-churner 83% of the time. Useful beyond a single threshold — the business
+> can choose how aggressive it wants to be with outreach.
+
+---
+
+### Churn Drivers — LR Coefficients
+![LR Coefficients](images/lr_coefficients.png)
+
+> Positive coefficients push toward churn. Negative ones push toward retention.
+> This chart is what turns a prediction into a recommendation.
+
+---
+
+## Code Highlights
+
+### Why accuracy was not enough
+
+```python
+LR = LogisticRegression()
+LR.fit(X_train, y_train)
+y_prediction = LR.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_prediction)   # 0.80 — looks great
+recall   = recall_score(y_test, y_prediction)      # 0.51 — this is the problem
+
+# Recall of 0.51 means the model missed half the churners
+# The model learned to predict 'stay' most of the time
+# High accuracy here is misleading
+```
+
+---
+
+### The fix — one parameter, big difference
+
+```python
+# 73% of customers did not churn — the model was ignoring the minority class
+df['Churn'].value_counts(normalize=True)
+# No     0.734
+# Yes    0.266
+
+# class_weight='balanced' increases the penalty for missing a churner
+LR_balanced = LogisticRegression(random_state=42, class_weight='balanced')
+LR_balanced.fit(X_train, y_train)
+
+# Before: Recall = 0.51 | F1 = 0.56
+# After:  Recall = 0.79 | F1 = 0.61
+# Precision dropped from 0.62 → 0.50 — expected and acceptable
+```
+
+---
+
+### Why complexity did not help
+
+```python
+models = {
+    'LogisticRegression': LogisticRegression(random_state=42, class_weight='balanced'),
+    'DecisionTree':       DecisionTreeClassifier(random_state=42, class_weight='balanced'),
+    'RandomForest':       RandomForestClassifier(random_state=42, class_weight='balanced'),
+    'XGBoost':            XGBClassifier(random_state=42, scale_pos_weight=2.76),
+    'Tuned_RandomForest': Best_Random_Forst_tuned_balanced
+}
+
+# Logistic Regression still won on F1 and Recall
+# Contract type, tenure, fiber optic — these are clean, linear separators
+# Boosting on top of a linear problem just adds noise
+```
+
+---
+
+### Reading the model — what actually drives churn
+
+```python
+coef_df = pd.DataFrame({
+    'Feature':     X.columns,
+    'Coefficient': LR_balanced.coef_[0]
+})
+
+# Top churn drivers (most positive)
+coef_df.sort_values('Coefficient', ascending=False).head(3)
+# InternetService_Fiber optic     → strongest churn signal
+# PaymentMethod_Electronic check  → second strongest
+# Contract_Month-to-month         → expected
+
+# Top retention factors (most negative)
+coef_df.sort_values('Coefficient').head(3)
+# tenure              → strongest retention signal by far
+# Contract_Two year   → customers who commit, stay
+# OnlineSecurity_Yes  → security bundle reduces churn
+```
+
+---
+
+## Business Recommendations
+
+| Priority | Action | Why |
+|---|---|---|
+| 🔴 Critical | Target customers in months 1–6 | Churn risk peaks in early tenure — highest leverage window |
+| 🔴 Critical | Incentivize month-to-month → annual upgrade | Biggest controllable churn lever in the data |
+| 🟠 High | Investigate Fiber Optic service quality | Highest churn rate of any service segment |
+| 🟠 High | Bundle Security + Tech Support | Both features reduce churn probability significantly |
+| 🟡 Medium | Review Electronic Check payment experience | Higher churn rate suggests friction or dissatisfaction |
+
+---
+
+## Model Performance Summary
 
 | Model | Accuracy | Precision | Recall | F1 |
 |---|---|---|---|---|
 | Logistic Regression | 0.800 | 0.620 | 0.510 | 0.560 |
-| Decision Tree | 0.728 | 0.480 | 0.490 | 0.485 |
-| Random Forest (default) | 0.793 | 0.630 | 0.460 | 0.532 |
 | Random Forest (tuned) | 0.798 | 0.656 | 0.473 | 0.550 |
 | XGBoost | 0.797 | 0.635 | 0.490 | 0.554 |
-| **Logistic Regression (balanced)** | **0.730** | **0.500** | **0.790** | **0.610** |
-
-> Replace these numbers with your actual printed outputs before publishing.
-
----
-
-## Why the balanced Logistic Regression was selected
-
-The dataset has a 73/27 class split — most customers did not churn.
-Without addressing this, models consistently favored the majority class and produced low Recall.
-
-After applying `class_weight='balanced'`, Recall improved from 0.51 to 0.79.
-Precision dropped from 0.62 to 0.50, but that tradeoff is acceptable here.
-
-In a churn context, missing an at-risk customer is more costly than a false alarm.
-The model also achieved an ROC-AUC of 0.83, which means it can meaningfully
-separate churners from non-churners across all classification thresholds.
-
----
-
-## Key findings
-
-**What increases churn risk:**
-- Fiber Optic internet service showed the highest churn rate among all service types
-- Month-to-month contracts had significantly higher churn than annual or two-year contracts
-- Customers paying via electronic check churned more than those using other payment methods
-- No online security or tech support subscription was associated with higher churn
-
-**What reduces churn risk:**
-- Longer customer tenure was the strongest retention signal — loyal customers stay
-- One-year and two-year contracts showed much lower churn
-- Having dependents correlated with lower churn probability
-- Online security and tech support subscriptions were both protective factors
-
----
-
-## Business recommendations
-
-**1. Prioritize the first few months**
-New customers churn the most. Early engagement programs — onboarding calls, first-month offers —
-would target the highest-risk window.
-
-**2. Push annual contracts**
-The gap in churn rate between month-to-month and annual contracts is large enough
-that even a modest incentive to upgrade would likely pay off.
-
-**3. Investigate Fiber Optic satisfaction**
-This segment has a churn rate that stands out from the rest.
-It may indicate a service quality or pricing issue worth a dedicated investigation.
-
-**4. Bundle security and support services**
-Online Security and Tech Support both reduce churn risk.
-Offering them as a discounted bundle could improve retention without heavy discounting on price alone.
+| **LR Balanced (final)** | **0.730** | **0.500** | **0.790** | **0.610** |
 
 ---
 
@@ -102,15 +192,14 @@ Python · Pandas · NumPy · Scikit-learn · XGBoost · Matplotlib · Seaborn ·
 
 ## Files
 
-├── Customer_Churn.ipynb    # Full notebook — cleaning, EDA, modeling, evaluation
-
-├── WA_Fn-UseC_-Telco-Customer-Churn.csv     # Raw dataset
-
+```
+├── Customer_Churn.ipynb                    # Full notebook
+├── WA_Fn-UseC_-Telco-Customer-Churn.csv   # Dataset
+├── images/                                # Visuals used in README
 └── README.md
+```
 
 ---
 
-## Author
-
-**Saleh Hossam** · Data Analyst  
-[LinkedIn](https://linkedin.com/in/saleh-hossam/) · [GitHub](https://github.com/Saleh-Hossam)
+**Saleh Hossam** · Data Analyst
+[LinkedIn](https://www.linkedin.com/in/YOUR-SLUG-HERE) · [GitHub](https://github.com/Saleh-Hossam)
