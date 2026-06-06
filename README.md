@@ -39,34 +39,34 @@ understand why they leave, and give the business something it can act on.
 
 ## Visuals
 
-### Churn Distribution
-![Churn Distribution](images/churn_distribution.png)
+### Churn by Tenure
+![Churn by Tenure](charts/churn_by_tenure.png)
 
-> The 73/27 split looks moderate — but it is enough to break a naive model.
-> Without correction, the model learns that predicting "stay" is usually right.
-> That gives high accuracy and useless recall.
+> Customers who churn have significantly lower tenure.
+> The first 6 months are the highest-risk window — new customers leave the most.
+> This is the strongest single signal in the dataset.
+
+---
+
+### Churn by Internet Service
+![Churn by Internet Service](charts/churn_by_internet_service.png)
+
+> Fiber Optic customers churn at a disproportionately high rate compared to DSL.
+> This is not a data anomaly — it shows up in both the EDA and the model coefficients.
+> It likely reflects a service quality or pricing issue worth a dedicated investigation.
 
 ---
 
 ### Model Comparison
-![Model Comparison](images/model_comparison.png)
+![Model Comparison](charts/model_comparison.png)
 
 > Random Forest and XGBoost both lost to a well-configured Logistic Regression.
 > The relationships in this data are largely linear — adding complexity only added noise.
 
 ---
 
-### Confusion Matrix
-![Confusion Matrix](images/confusion_matrix.png)
-
-> 296 churners caught. 78 missed. 300 false alarms.
-> The false alarms are customers who get a retention offer they didn't need — acceptable.
-> The 78 misses are customers who left with no intervention — that is the number that matters.
-
----
-
 ### ROC Curve — AUC 0.83
-![ROC Curve](images/roc_curve.png)
+![ROC Curve](charts/Roc-Auc.png)
 
 > AUC of 0.83 means the model correctly ranks a random churner above a random
 > non-churner 83% of the time. Useful beyond a single threshold — the business
@@ -74,10 +74,12 @@ understand why they leave, and give the business something it can act on.
 
 ---
 
-### Churn Drivers — LR Coefficients
-![LR Coefficients](images/lr_coefficients.png)
+### Churn Drivers vs Retention Factors
+![Churn Drivers vs Retention](charts/churn_drivers_vs_retention.png)
 
 > Positive coefficients push toward churn. Negative ones push toward retention.
+> Fiber Optic and month-to-month contracts are the strongest churn signals.
+> Tenure and annual contracts are the strongest retention factors.
 > This chart is what turns a prediction into a recommendation.
 
 ---
@@ -195,7 +197,7 @@ Python · Pandas · NumPy · Scikit-learn · XGBoost · Matplotlib · Seaborn ·
 ```
 ├── Customer_Churn.ipynb                    # Full notebook
 ├── WA_Fn-UseC_-Telco-Customer-Churn.csv   # Dataset
-├── images/                                # Visuals used in README
+├── charts/                                # All visuals
 └── README.md
 ```
 
