@@ -5,7 +5,7 @@
 ![XGBoost](https://img.shields.io/badge/XGBoost-Boosting-red?style=flat)
 ![Pandas](https://img.shields.io/badge/Pandas-Analysis-150458?style=flat&logo=pandas)
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=flat&logo=jupyter)
-![Status](https://img.shields.io/badge/Status-Completed-brightgreen?style=flat)
+
 
 ---
 
