@@ -1,4 +1,4 @@
-# Customer Churn Prediction — Telco Dataset
+# Customer Churn Prediction 
 
 Churn is expensive. Acquiring a new customer costs significantly more than keeping an existing one,
 which makes early detection valuable for any subscription-based business.
@@ -9,8 +9,6 @@ understand why, and translate the findings into actionable business recommendati
 ---
 
 ## Dataset
-
-**Source:** [Telco Customer Churn — IBM Sample Dataset via Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
 
 7,043 customers, 20 features covering demographics, account information, and subscribed services.
 Target variable: whether the customer churned within the last month.
