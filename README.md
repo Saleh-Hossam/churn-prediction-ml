@@ -13,6 +13,8 @@
 
 ---
 
+![Overview](charts/dashboard_ml.png)
+
 ## The Problem
 
 Acquiring a new customer costs 5–7× more than keeping an existing one.
